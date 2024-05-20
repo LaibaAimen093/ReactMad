@@ -1,33 +1,45 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Text, TouchableOpacity, FlatList, Image } from 'react-native';
+import { getFirestore, collection, onSnapshot } from "firebase/firestore";
 import Icon from 'react-native-vector-icons/FontAwesome'; // Import FontAwesome icon library
 
 export default function Screen1 ({navigation}) {
-  const [selectedTab, setSelectedTab] = useState('ebooks'); // 'ebooks' or 'audiobooks'
+  const [audiobooks, setAudiobooks] = useState([]);
+  const [books, setBooks] = useState([]);
+  const [selectedTab, setSelectedTab] = useState('audiobooks'); 
   const [favorites, setFavorites] = useState([]); 
 
-  // Dummy data for e-books and audiobooks
-  const ebooksData = [
-    { id: 1, title: 'E-book 1', cover: require('./assets/Book a storefront of bookshop drawing in vintage style on white background.jpg'), review: 4 },
-    { id: 2, title: 'E-book 2', cover: require('./assets/Book a storefront of bookshop drawing in vintage style on white background.jpg'), review: 5 },
-    // Add more e-book data as needed
-  ];
+  useEffect(() => {
+    const dbFS = getFirestore();
+    const unsubscribe = onSnapshot(collection(dbFS, 'audiobooks'), snapshot => {
+      const fetchedAudiobooks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAudiobooks(fetchedAudiobooks);
+    });
 
-  const audiobooksData = [
-    { id: 1, title: 'Audiobook 1', cover: require('./assets/Book a storefront of bookshop drawing in vintage style on white background.jpg'), review: 3 },
-    { id: 2, title: 'Audiobook 2', cover: require('./assets/Book a storefront of bookshop drawing in vintage style on white background.jpg'), review: 4 },
-    // Add more audiobook data as needed
-  ];
+    return unsubscribe;
+  }, [selectedTab]);
+
+  useEffect(() => {
+    const dbFS = getFirestore();
+    const unsubscribe = onSnapshot(collection(dbFS, 'books'), snapshot => {
+      const fetchedBooks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setBooks(fetchedBooks);
+    });
+
+    return unsubscribe;
+  }, [selectedTab]);
+
 
   const renderItem = ({ item }) => (
     <View style={styles.item}>
       <View style={styles.bookContainer}>
         <Image
-          source={item.cover}
+          source={{ uri: item.coverUrl }}
           style={styles.bookCover}
         />
         <View style={styles.bookInfo}>
           <Text style={styles.bookTitle}>{item.title}</Text>
+          <Text style={styles.author}>{item.author}</Text>
           <View style={styles.actionIcons}>
             <TouchableOpacity onPress={() => toggleFavorite(item.id)}>
               <Icon
@@ -100,7 +112,7 @@ export default function Screen1 ({navigation}) {
         </TouchableOpacity>
       </View>
       <FlatList
-        data={selectedTab === 'ebooks' ? ebooksData : audiobooksData}
+        data={selectedTab === 'ebooks' ? books : audiobooks}
         renderItem={renderItem}
         keyExtractor={item => item.id.toString()}
       />
@@ -149,6 +161,10 @@ const styles = StyleSheet.create({
     height: 120,
     marginRight: 10,
     borderRadius: 5, // Add border radius for rounded corners
+  },
+  author: {
+    fontSize: 16,
+    color: 'gray',
   },
   bookInfo: {
     flex: 1,

@@ -1,20 +1,26 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import { StyleSheet, Text, View, Image, TextInput, TouchableOpacity } from 'react-native';
 import { auth } from "./firebase";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { useNavigation } from '@react-navigation/native'; 
+import UserContext from './UserContext';
 
-export default function Login({ navigation }) {
+export default function Login() {
+    const { setUserId } = useContext(UserContext);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false); // State to toggle password visibility
+    const navigation = useNavigation();
 
     const handleLogin = async () => {
         console.log('Email:', email);   
         console.log('Password:', password);
         await signInWithEmailAndPassword(auth, email, password)
             .then((userCredential) => {
+                const userId = userCredential.user.uid;
+                setUserId(userId);
                 console.log("Succesfull", userCredential);
-                navigation.navigate('Screen1');
+                navigation.navigate('HomeTabs', { screen: 'Home' }); 
             })
             .catch((error) => {
                 const errorCode = error.code;
@@ -37,8 +43,14 @@ export default function Login({ navigation }) {
             <View style={styles.logo}>
                 <Image
                     style={styles.tinyLogo}
-                    source={require('./assets/Library logo template design.jpg')}
+                    source={require('./assets/newLogo2.png')}
                 />
+            </View>
+
+            <View>
+                <Text style={{ fontSize: 30, fontWeight: 'bold', color: '#673987', }}>
+                    Login
+                </Text>
             </View>
 
             <View style={styles.input}>
@@ -78,7 +90,10 @@ export default function Login({ navigation }) {
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.signUpButton} onPress={handleSignUp}>
-                <Text style={styles.buttonText}>Sign Up</Text>
+                <Text style={{color: '#673987',
+                    fontSize: 18,
+                    fontWeight: 'bold',
+                }}>Sign Up</Text>
             </TouchableOpacity>
         </View>
     );
@@ -94,12 +109,16 @@ const styles = StyleSheet.create({
         marginBottom: 50,
     },
     input: {
-        marginBottom: 20,
+        marginTop:40,
+        marginBottom: 30,
         width: '80%',
     },
     inputtext: {
-        backgroundColor: 'white',
-        height: 40,
+        // backgroundColor: 'white',
+        borderStyle: 'solid',
+        borderWidth: 1,
+        borderColor: 'lightgray',
+        height: 50,
         marginVertical: 10,
         borderWidth: 1,
         padding: 10,
@@ -108,9 +127,11 @@ const styles = StyleSheet.create({
     passwordContainer: {
         flexDirection: 'row',
         alignItems: 'center',
-        borderBottomWidth: 1,
+        borderStyle: 'solid',
+        borderWidth: 1,
         borderColor: 'lightgray',
         paddingBottom: 5,
+        borderRadius: 5,
     },
     passwordInput: {
         flex: 1,
@@ -126,23 +147,27 @@ const styles = StyleSheet.create({
         height: 24,
     },
     loginButton: {
-        backgroundColor: 'blue',
-        paddingVertical: 15,
-        paddingHorizontal: 50,
-        borderRadius: 30,
+        backgroundColor: '#673987',
+        paddingVertical: 10,
+        paddingHorizontal: 120,
+        borderRadius: 20,
     },
     signUpButton: {
-        backgroundColor: 'green',
-        paddingVertical: 15,
+        backgroundColor: 'white',
+        borderWidth: 1,
+        borderStyle: 'solid',
+        borderColor: '#673987',
+        // borderBlockColor: '#673987',
+        paddingVertical: 10,
         marginTop: 15,
-        paddingHorizontal: 50,
-        borderRadius: 30,
+        paddingHorizontal: 110,
+        borderRadius: 20,
     },
     forgotPasswordButton: {
         marginBottom: 20,
     },
     forgotPasswordText: {
-        color: 'blue',
+        color: 'gray',
         fontSize: 16,
     },
     buttonText: {
@@ -151,8 +176,9 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
     },
     tinyLogo: {
-        borderRadius: 50,
+        // borderRadius: 50,
         width: 100,
         height: 100,
+        tintColor: '#673987',
     },
 });

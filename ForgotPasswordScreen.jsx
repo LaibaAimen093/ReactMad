@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, Text, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, StyleSheet, Text, TextInput, TouchableOpacity, Alert, Image } from 'react-native';
 import { auth } from './firebase'; // Import the Firebase authentication instance
 import {sendPasswordResetEmail} from 'firebase/auth';
 
@@ -26,7 +26,17 @@ const ForgotPasswordScreen = ({ navigation }) => {
 
     return (
         <View style={styles.container}>
-            <Text style={styles.title}>Forgot Password</Text>
+
+            <View style={styles.logo}>
+                <Image
+                    style={styles.tinyLogo}
+                    source={require('./assets/forgetPasswordImg.png')}
+                />
+            </View>
+
+            <Text style={{ fontSize: 25, fontWeight: 'bold', color: '#673987', marginBottom: 50,}}>
+                    Forgot Password
+                </Text>
             <TextInput
                 style={styles.input}
                 placeholder="Email"
@@ -64,16 +74,26 @@ const styles = StyleSheet.create({
         marginBottom: 20,
     },
     resetButton: {
-        backgroundColor: 'blue',
-        paddingVertical: 15,
-        paddingHorizontal: 50,
-        borderRadius: 30,
+        backgroundColor: '#673987',
+        paddingVertical: 10,
+        paddingHorizontal: 100,
+        borderRadius: 20,
+        marginTop: 20,
     },
     buttonText: {
         color: 'white',
         fontSize: 18,
         fontWeight: 'bold',
     },
+    tinyLogo: {
+        // borderRadius: 50,
+        width: 300,
+        height: 300,
+        // tintColor: '#673987',
+    },
+    logo: {
+        marginBottom: 50,
+    }
 });
 
 export default ForgotPasswordScreen;
