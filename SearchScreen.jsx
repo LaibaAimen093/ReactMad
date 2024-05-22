@@ -305,6 +305,7 @@ export default function SearchScreen({ navigation }) {
                 renderItem={renderBookItem}
                 keyExtractor={(item) => item.id}
                 style={styles.bookList}
+                showsVerticalScrollIndicator={false}
             />
         </View>
     );
@@ -313,7 +314,7 @@ export default function SearchScreen({ navigation }) {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        marginTop: 50,
+        marginTop: 20,
         paddingHorizontal: 20,
         backgroundColor: '#f5f5f5',
     },

@@ -43,7 +43,7 @@ export default function Login() {
             <View style={styles.logo}>
                 <Image
                     style={styles.tinyLogo}
-                    source={require('./assets/newLogo2.png')}
+                    source={require('./assets/newIcon.png')}
                 />
             </View>
 

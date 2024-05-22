@@ -70,11 +70,11 @@ export default function PlaylistScreen({ route, navigation }) {
 
     return (
         <View style={styles.container}>
-            <View>
+            {/* <View>
         <Text style={{fontSize:30,marginLeft:10,fontWeight:'bold',marginTop:20,marginBottom:10,}}>
           Playlists:
         </Text>
-      </View>
+      </View> */}
             <FlatList
                 data={playlists}
                 renderItem={renderItem}
@@ -84,6 +84,7 @@ export default function PlaylistScreen({ route, navigation }) {
                     <RefreshControl
                       refreshing={refreshing}
                       onRefresh={onRefresh}
+                      colors={['#673987']}
                     />
                   }
             />
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
     container: {
       flex: 1,
       paddingHorizontal: 20,
-      paddingTop: 50,
+      paddingTop: 30,
       backgroundColor: '#fff',
     },
     itemContainer: {

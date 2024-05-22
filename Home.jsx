@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, Image, ScrollView, ActivityIndicator, Touchable
 import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDocs, addDoc, query, where, getDoc } from "firebase/firestore";
 import StarRatingDisplay from 'react-native-star-rating-widget';
 import UserContext from './UserContext';
+import Toast from 'react-native-toast-message';
 
 export default function Home({ navigation }) {
   const [authors, setAuthors] = useState([]);
@@ -21,6 +22,10 @@ export default function Home({ navigation }) {
     require('./assets/Jungho Lee - Harvest.jpg'),
     require('./assets/Memoirs.jpg'),
   ];
+
+  const dummyFunction = () => {
+    console.log("This is a dummy function");
+  };
 
   useEffect(() => {
     const fetchBooks = async () => {
@@ -101,6 +106,14 @@ export default function Home({ navigation }) {
     }
   };
 
+  const showToast = (message) => {
+    Toast.show({
+        type: 'success',
+        text1: message,
+        position: 'bottom',
+    });
+};
+
 const addToPlaylist = async (bookId, playlistName, userId, bookDetails) => {
     try {
         const db = getFirestore();
@@ -140,10 +153,12 @@ const addToPlaylist = async (bookId, playlistName, userId, bookDetails) => {
             });
   
             console.log('Book added to playlist successfully with ID:', bookDocRef.id);
+            showToast('Book added to playlist');
         } else {
             // Book already exists in the playlist
             console.log('Book already exists in the playlist.');
-            alert('Book already exists in the playlist.');
+            // alert('Book already exists in the playlist.');
+            showToast('Book already exists in the playlist.');
         }
   
         const playlistId = await fetchPlaylistId(playlistName, userId);
@@ -167,13 +182,6 @@ const addToPlaylist = async (bookId, playlistName, userId, bookDetails) => {
     return () => clearInterval(interval); // Clean up interval on component unmount
   }, []);
 
-  // if (loading) {
-  //   return (
-  //     <View style={styles.loadingContainer}>
-  //       <ActivityIndicator size="large" color="#0000ff" />
-  //     </View>
-  //   );
-  // }
 
   const CustomLoader = () => (
     <View style={styles.loaderContainer}>
@@ -188,9 +196,9 @@ const addToPlaylist = async (bookId, playlistName, userId, bookDetails) => {
   }
 
   return (
-    <ScrollView>
+    <ScrollView style={{borderColor:'white'}}>
       <View>
-        <Text style={{fontSize:30,fontWeight:'bold',marginTop:60,marginLeft:20}}>
+        <Text style={{fontSize:30,fontWeight:'bold',marginTop:20,marginLeft:20,}}>
           Discover
         </Text>
       </View>
@@ -209,7 +217,7 @@ const addToPlaylist = async (bookId, playlistName, userId, bookDetails) => {
           marginTop:20,
           color: '#333',
         }}>Authors</Text>
-        <ScrollView horizontal contentContainerStyle={styles.authorRow}>
+        <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.authorRow}>
           {authors.map((author) => (
             <TouchableOpacity key={author.id} onPress={() => handleAuthorPress(author)}>
               <View style={styles.authorContainer}>
@@ -222,7 +230,7 @@ const addToPlaylist = async (bookId, playlistName, userId, bookDetails) => {
       </View>
       <View style={styles.fictionBooksSection}>
         <Text style={styles.heading}>Fiction Books</Text>
-        <ScrollView horizontal contentContainerStyle={styles.fictionBooksRow}>
+        <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.fictionBooksRow}>
         {fictionBooks.map((book) => (
     <TouchableOpacity
         key={book.id}
@@ -265,7 +273,7 @@ const addToPlaylist = async (bookId, playlistName, userId, bookDetails) => {
             <Text style={styles.ratingText}>
               Rating: {book.rating.value.toFixed(1)} ({book.rating.count} ratings)
             </Text>
-            <StarRatingDisplay starSize={25} color='#673987' starStyle={{marginRight:0,}} rating={book.rating.value.toFixed(1)} />
+            <StarRatingDisplay starSize={25} color='#673987' starStyle={{marginRight:0,}} rating={book.rating.value.toFixed(1)} onChange={dummyFunction} enableSwiping={false}/>
           </>
         ) : (
           <Text style={styles.ratingText}>No ratings yet</Text>
@@ -281,7 +289,7 @@ const addToPlaylist = async (bookId, playlistName, userId, bookDetails) => {
       
       <View style={styles.fictionBooksSection}>
         <Text style={styles.heading}>Fantasy Books</Text>
-        <ScrollView horizontal contentContainerStyle={styles.fictionBooksRow}>
+        <ScrollView horizontal showsVerticalScrollIndicator={false} showsHorizontalScrollIndicator={false} contentContainerStyle={styles.fictionBooksRow}>
         {fantasyBooks.map((book) => (
     <TouchableOpacity
         key={book.id}
@@ -324,7 +332,7 @@ const addToPlaylist = async (bookId, playlistName, userId, bookDetails) => {
             <Text style={styles.ratingText}>
               Rating: {book.rating.value.toFixed(1)} ({book.rating.count} ratings)
             </Text>
-            <StarRatingDisplay starSize={25} color='#673987' starStyle={{marginRight:0,}} rating={book.rating.value.toFixed(1)} />
+            <StarRatingDisplay starSize={25} color='#673987' starStyle={{marginRight:0,}} rating={book.rating.value.toFixed(1)} onChange={dummyFunction} />
           </>
         ) : (
           <Text style={styles.ratingText}>No ratings yet</Text>
@@ -379,9 +387,9 @@ const styles = StyleSheet.create({
     marginHorizontal: 10,
   },
   authorImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
   },
   authorName: {
     marginTop: 5,
@@ -409,8 +417,10 @@ const styles = StyleSheet.create({
   bookContainer: {
     backgroundColor:'#f2f2f2',
     borderRadius:20,
+    height:270,
     // marginTop:5,
     marginRight: 15,
+    width:155,
     alignItems: 'center',
   },
   bookImage: {
@@ -457,6 +467,6 @@ const styles = StyleSheet.create({
     alignItems:'center,'
   },
   ratingText:{
-    marginLeft:35,
+    marginLeft:10,
   },
 });

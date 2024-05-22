@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from 'react';
-import { View, Text, StyleSheet, Pressable, Image, TouchableOpacity, Modal, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Pressable, Image, TouchableOpacity, Modal, ScrollView, RefreshControl  } from 'react-native';
 import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDocs, addDoc, query, where, getDoc } from "firebase/firestore";
 import { FlatList } from 'react-native-gesture-handler';
 import UserContext from './UserContext';
@@ -14,48 +14,59 @@ export default function Books({ navigation }) {
   const [selectedRating, setSelectedRating] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
 
-  useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        const dbFS = getFirestore();
-  
-        // Subscribe to changes in the 'books' collection
-        const unsubscribe = onSnapshot(collection(dbFS, 'books'), snapshot => {
-          const fetchedBooks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setBooks(fetchedBooks);
-          setLoading(false);
-        });
-  
-        // Fetch all books from the 'books' collection
-        const booksSnapshot = await getDocs(collection(dbFS, 'books'));
-        console.log("booksSnapshot", booksSnapshot);
-        
-        // Map the fetched books to include the 'userHasRated' property
-        const allBooks = booksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        const updatedBooks = allBooks.map(book => ({
-          ...book,
-          userHasRated: !!(book.rating && book.rating.userRatings && book.rating.userRatings[userId])
-        }));
-  
-        // Update the state with the updated books
-        setBooks(updatedBooks);
-        console.log("updatedBooks",updatedBooks);
+  const fetchBooks = async () => {
+    try {
+      const dbFS = getFirestore();
 
-        console.log("books",books);
-  
-        // Return the unsubscribe function to clean up the subscription
-        return unsubscribe;
-      } catch (error) {
-        console.error('Error fetching books:', error);
+      // Subscribe to changes in the 'books' collection
+      const unsubscribe = onSnapshot(collection(dbFS, 'books'), snapshot => {
+        const fetchedBooks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setBooks(fetchedBooks);
         setLoading(false);
-        // Handle error
-      }
-    };
-  
+      });
+
+      // Fetch all books from the 'books' collection
+      const booksSnapshot = await getDocs(collection(dbFS, 'books'));
+      console.log("booksSnapshot", booksSnapshot);
+      
+      // Map the fetched books to include the 'userHasRated' property
+      const allBooks = booksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      const updatedBooks = allBooks.map(book => ({
+        ...book,
+        userHasRated: !!(book.rating && book.rating.userRatings && book.rating.userRatings[userId])
+      }));
+
+      // Update the state with the updated books
+      setBooks(updatedBooks);
+      console.log("updatedBooks",updatedBooks);
+
+      console.log("books",books);
+
+      // Return the unsubscribe function to clean up the subscription
+      return unsubscribe;
+    } catch (error) {
+      console.error('Error fetching books:', error);
+      setLoading(false);
+      // Handle error
+    }
+  };
+
+  useEffect(() => {  
     // Call the fetchBooks function
     fetchBooks();
   }, []);
+
+  const dummyFunction = () => {
+    console.log("This is a dummy function");
+  };
+
+  const onRefresh = async () => { // Add this function
+    setRefreshing(true);
+    await fetchBooks();
+    setRefreshing(false);
+  };
   
 
   const handleRating = async (audiobookId, rating) => {
@@ -122,9 +133,7 @@ export default function Books({ navigation }) {
   };
 
 
-  const renderItem = ({ item }) => (
-    <ScrollView>
-      
+  const renderItem = ({ item }) => (      
       <TouchableOpacity style={styles.itemContainer} onPress={() => navigation.navigate('BookInfo', { books, currentIndex: books.findIndex(book => book.title === item.title) })}>
     
     <View style={styles.bookInfo}>      
@@ -142,7 +151,7 @@ export default function Books({ navigation }) {
             <Text style={styles.ratingText}>
               Rating: {item.rating.value.toFixed(1)} ({item.rating.count} ratings)
             </Text>
-            <StarRatingDisplay starSize={25} color='#673987' starStyle={{marginRight:0,}} rating={item.rating.value.toFixed(1)} />
+            <StarRatingDisplay starSize={25} color='#673987' starStyle={{marginRight:0,}} rating={item.rating.value.toFixed(1)} onChange={dummyFunction} />
           </>
         ) : (
           <Text style={styles.ratingText}>No ratings yet</Text>
@@ -187,7 +196,7 @@ export default function Books({ navigation }) {
         </View>
   </View>
       </TouchableOpacity>
-  </ScrollView>
+
   );
 
   const CustomLoader = () => (
@@ -205,16 +214,23 @@ export default function Books({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <View>
+      {/* <View>
         <Text style={{fontSize:30,marginLeft:20,fontWeight:'bold'}}>
-          E-Books:
+          E-BOOKS
         </Text>
-      </View>
+      </View> */}
       <FlatList
         style={styles.flatList}
         data={books}
         renderItem={renderItem}
         keyExtractor={item => item.id}
+        refreshControl={ // Add the RefreshControl component here
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#673987']} // Customize the color of the refresh spinner
+          />
+        }
       />
     </View>
   );
@@ -223,7 +239,7 @@ export default function Books({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 70,
+    marginTop: 30,
     // paddingHorizontal: 10,
   },
   itemContainer: {
@@ -303,4 +319,14 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
   },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loaderImage: {
+    width: 150,
+    height: 150,
+    tintColor: '#673987',
+  }
 });

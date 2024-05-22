@@ -1,21 +1,38 @@
 import React, { useState, useEffect, useContext } from 'react';
-import { View, Text, FlatList, StyleSheet, ActivityIndicator,Image } from 'react-native';
-import { getFirestore, collection, doc, getDoc, query, where, getDocs } from 'firebase/firestore';
+import { View, Text, FlatList, StyleSheet, Image, RefreshControl  } from 'react-native';
+import { getFirestore, collection, onSnapshot, doc, getDocs, query, where, getDoc } from "firebase/firestore";
 import UserContext from './UserContext';
-import { Audio } from 'expo-av';
+import Svg, { Circle } from 'react-native-svg';
 
 export default function ProgressScreen({ navigation }) {
     const [audiobooksWithProgress, setAudiobooksWithProgress] = useState([]);
     const [loading, setLoading] = useState(true);
-
+    const [audiobooks, setAudiobooks] = useState([]);
+    const [refreshing, setRefreshing] = useState(false);
     const { userId } = useContext(UserContext);
+
+    useEffect(() => {
+        const dbFS = getFirestore();
+        const unsubscribe = onSnapshot(collection(dbFS, 'audiobooks'), snapshot => {
+            const fetchedAudiobooks = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            setAudiobooks(fetchedAudiobooks);
+            console.log("Fetched audiobooks:", fetchedAudiobooks);
+        });
+
+        return unsubscribe;
+    }, []);
+
+    const onRefresh = async () => {
+      setRefreshing(true);
+      await fetchCurrentlyListeningPlaylist();
+      setRefreshing(false);
+  };
 
     const fetchPlaylistId = async (playlistName, userId) => {
         try {
             const db = getFirestore();
             const userDocRef = doc(db, 'users', userId);
             const playlistsCollectionRef = collection(userDocRef, 'playlists');
-
             const playlistQuery = query(playlistsCollectionRef, where('name', '==', playlistName));
             const playlistQuerySnapshot = await getDocs(playlistQuery);
 
@@ -27,69 +44,79 @@ export default function ProgressScreen({ navigation }) {
             }
         } catch (error) {
             console.error('Error fetching playlist ID:', error);
-            alert('Error fetching playlist ID. Please try again later.');
             return null;
         }
     };
 
-    const getAudioDuration = async (audioUri) => {
+    const getAudioDuration = async (title, author) => {
         try {
-            const { sound } = await Audio.Sound.createAsync({ uri: audioUri });
-            const status = await sound.getStatusAsync();
-            const durationMillis = status.durationMillis;
-            const durationSeconds = durationMillis / 1000;
-            return durationSeconds;
+            const matchingAudiobook = audiobooks.find(audiobook => audiobook.title === title && audiobook.author === author);
+            console.log("Matching audiobook for title:", title, "and author:", author, "is:", matchingAudiobook);
+            if (matchingAudiobook) {
+                return matchingAudiobook.duration;
+            } else {
+                return null;
+            }
         } catch (error) {
             console.error('Error getting audio duration:', error);
             return null;
         }
     };
 
-    useEffect(() => {
-        const fetchCurrentlyListeningPlaylist = async () => {
-            try {
-                const db = getFirestore();
-                const playlistId = await fetchPlaylistId('Currently Listening', userId);
+    useEffect(() => {       
+        if (userId && audiobooks.length > 0) {
+            fetchCurrentlyListeningPlaylist();
+        }
+    }, [userId, audiobooks]);
 
-                if (playlistId) {
-                    const playlistDocRef = doc(collection(db, 'users', userId, 'playlists'), playlistId);
-                    const playlistDocSnapshot = await getDoc(playlistDocRef);
-                    const playlistData = playlistDocSnapshot.data();
+    const fetchCurrentlyListeningPlaylist = async () => {
+      try {
+          const db = getFirestore();
+          const playlistId = await fetchPlaylistId('Currently Listening', userId);
 
-                    if (playlistData) {
-                        const booksQuerySnapshot = await getDocs(collection(playlistDocRef, 'books'));
-                        const booksData = booksQuerySnapshot.docs.map(doc => doc.data());
+          if (playlistId) {
+              const playlistDocRef = doc(collection(db, 'users', userId, 'playlists'), playlistId);
+              const playlistDocSnapshot = await getDoc(playlistDocRef);
+              const playlistData = playlistDocSnapshot.data();
 
-                        const audiobooks = booksData || [];
-                        const audiobooksWithProgress = await Promise.all(
-                            audiobooks.map(async (audiobook) => {
-                                const progressDocRef = doc(db, `users/${userId}/audiobookProgress`, `${audiobook.title}_${audiobook.author}`);
-                                const progressDocSnapshot = await getDoc(progressDocRef);
-                                const progressData = progressDocSnapshot.data();
+              if (playlistData) {
+                  const booksQuerySnapshot = await getDocs(collection(playlistDocRef, 'books'));
+                  const booksData = booksQuerySnapshot.docs.map(doc => doc.data());
 
-                                const duration = await getAudioDuration(audiobook.audioUrl);
-                                const progressPercentage = progressData ? (progressData.position / duration) * 100 : 0;
+                  const audiobooksData = booksData || [];
+                  console.log("Audiobooks in playlist:", audiobooksData);
+                  const audiobooksWithProgress = await Promise.all(
+                      audiobooksData.map(async (audiobook) => {
+                          const progressDocRef = doc(db, `users/${userId}/audiobookProgress`, `${audiobook.title}_${audiobook.author}`);
+                          const progressDocSnapshot = await getDoc(progressDocRef);
+                          const progressData = progressDocSnapshot.data();
 
-                                return { ...audiobook, progressPercentage };
-                            })
-                        );
-                        setAudiobooksWithProgress(audiobooksWithProgress);
-                    }
-                }
-            } catch (error) {
-                console.error('Error fetching progress data:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
+                          console.log("Audiobook progress data:", progressData);
+                          const duration = await getAudioDuration(audiobook.title, audiobook.author);
+                          console.log("Duration for audiobook:", duration);
+                          const progressPercentage = progressData && duration ? (progressData.position / duration) * 100 : 0;
 
-        fetchCurrentlyListeningPlaylist();
-    }, [userId]);
+                          return { ...audiobook, progressPercentage };
+                      })
+                  );
+                  setAudiobooksWithProgress(audiobooksWithProgress);
+              }
+          }
+      } catch (error) {
+          console.error('Error fetching progress data:', error);
+      } finally {
+          setLoading(false);
+      }
+  };
 
     const renderItem = ({ item }) => {
         if (!item || item.progressPercentage === undefined) {
             return null;
         }
+
+        const radius = 25;
+        const circumference = 2 * Math.PI * radius;
+        const strokeDashoffset = isFinite(item.progressPercentage) ? circumference * (1 - item.progressPercentage / 100) : 0;
 
         return (
             <View style={styles.itemContainer}>
@@ -97,50 +124,70 @@ export default function ProgressScreen({ navigation }) {
                     <Text style={styles.title}>{item.title}</Text>
                     <Text style={styles.progressText}>Progress: {item.progressPercentage.toFixed(2)}%</Text>
                 </View>
-                <View style={styles.progressBar}>
-                    <View style={[styles.progressFill, { width: `${item.progressPercentage}%` }]} />
-                </View>
+                <Svg height={radius * 2} width={radius * 2}>
+                    <Circle
+                        stroke="#ddd"
+                        fill="none"
+                        strokeWidth="6"
+                        cx={radius}
+                        cy={radius}
+                        r={radius - 6}
+                    />
+                    <Circle
+                        stroke="#673987"
+                        fill="none"
+                        strokeWidth="6"
+                        strokeDasharray={`${circumference} ${circumference}`}
+                        style={{ strokeDashoffset }}
+                        cx={radius}
+                        cy={radius}
+                        r={radius - 6}
+                    />
+                </Svg>
             </View>
         );
     };
 
     const CustomLoader = () => (
         <View style={styles.loaderContainer}>
-          <Image source={require('./assets/loader2.gif')} style={styles.loaderImage} />
+            <Image source={require('./assets/loader2.gif')} style={styles.loaderImage} />
         </View>
-      );
-    
-      if (loading) {
+    );
+
+    if (loading) {
         return (
-          <CustomLoader />
+            <CustomLoader />
         );
-      }
+    }
 
     return (
         <View style={styles.container}>
-            {/* {loading ? (
-                <ActivityIndicator size="large" color="#0000ff" />
-            ) : (
-                <FlatList
-                    data={audiobooksWithProgress}
-                    renderItem={renderItem}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.listContent}
-                />
-            )} */}
+            {/* <View>
+                <Text style={{ fontSize: 30, marginLeft: 20, fontWeight: 'bold', marginBottom: 10, marginTop: 10 }}>
+                    Progress:
+                </Text>
+            </View> */}
             <FlatList
-                    data={audiobooksWithProgress}
-                    renderItem={renderItem}
-                    keyExtractor={(item) => item.id}
-                    contentContainerStyle={styles.listContent}
-                />
+                data={audiobooksWithProgress}
+                renderItem={renderItem}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.listContent}
+                showsVerticalScrollIndicator={false}
+                refreshControl={ // Add the RefreshControl component here
+                  <RefreshControl
+                      refreshing={refreshing}
+                      onRefresh={onRefresh}
+                      colors={['#673987']} // Customize the color of the refresh spinner
+                  />
+              }
+            />
         </View>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
-      marginTop:50,
+        marginTop: 10,
         flex: 1,
         backgroundColor: '#fff',
         paddingTop: 20,
@@ -157,6 +204,7 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
         elevation: 2,
+        height: 120,
     },
     title: {
         fontSize: 18,
@@ -171,26 +219,14 @@ const styles = StyleSheet.create({
         flex: 1,
         marginRight: 8,
     },
-    progressBar: {
-        height: 8,
-        width: '50%',
-        backgroundColor: '#ddd',
-        borderRadius: 4,
-        marginTop: 8,
-    },
-    progressFill: {
-        height: '100%',
-        backgroundColor: '#673987',
-        borderRadius: 4,
-    },
     loaderContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-      },
-      loaderImage: {
+    },
+    loaderImage: {
         width: 150,
         height: 150,
         tintColor: '#673987',
-      }
+    }
 });

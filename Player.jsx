@@ -28,6 +28,17 @@ export default function Player({ route, navigation }) {
                     const progress = docSnap.data();
                     return progress ? progress.position : 0;
                 }
+
+                // const audiobookDocRef = doc(collection(db, 'audiobooks'), `${audiobookTitle}_${audiobookAuthor}`);
+                // const audiobookDocSnap = await getDoc(audiobookDocRef);
+                // let fetchedDuration = 0;
+                // if (audiobookDocSnap.exists()) {
+                //     const audiobookData = audiobookDocSnap.data();
+                //     fetchedDuration = audiobookData ? audiobookData.duration : 0;
+                // }
+
+                // console.log("fetchedDuration",fetchedDuration);
+                // setDuration(fetchedDuration);
                 return 0;
             } catch (error) {
                 console.error('Error loading progress:', error);
@@ -151,7 +162,7 @@ export default function Player({ route, navigation }) {
         if (status.isLoaded) {
             console.log('Playback status updated:', status);
             setPosition(status.positionMillis / 1000);
-            setDuration(status.durationMillis / 1000);
+            // setDuration(status.durationMillis / 1000);
 
             if (status.didJustFinish) {
                 playNext();
@@ -184,10 +195,21 @@ export default function Player({ route, navigation }) {
     };
 
     const formatTime = (timeInSeconds) => {
-        const minutes = Math.floor(timeInSeconds / 60);
+        console.log("timeInSeconds",timeInSeconds);
+        const hours = Math.floor(timeInSeconds / 3600);
+        console.log("hours",hours);
+        const minutes = Math.floor((timeInSeconds % 3600) / 60);
+        console.log("minutes",minutes);
         const seconds = Math.floor(timeInSeconds % 60);
-        return `${minutes < 10 ? '0' : ''}${minutes}:${seconds < 10 ? '0' : ''}${seconds}`;
+        console.log("seconds",seconds);
+    
+        const formattedHours = hours.toString().padStart(2, '0');
+        const formattedMinutes = minutes.toString().padStart(2, '0');
+        const formattedSeconds = seconds.toString().padStart(2, '0');
+    
+        return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
     };
+    
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -195,7 +217,7 @@ export default function Player({ route, navigation }) {
                 sound.getStatusAsync().then(status => {
                     if (status.isLoaded) {
                         setPosition(status.positionMillis / 1000);
-                        setDuration(status.durationMillis / 1000);
+                        // setDuration(status.durationMillis / 1000);
                     }
                 });
             }
@@ -234,7 +256,7 @@ export default function Player({ route, navigation }) {
                     />
                     <View style={styles.timeContainer}>
                         <Text>{formatTime(position)}</Text>
-                        <Text>{formatTime(duration - position)}</Text>
+                        <Text>{audiobooks[currentIndex].duration !== 0 ? formatTime(audiobooks[currentIndex].duration - position) : '00:00:00'}</Text>
                     </View>
                     <View style={styles.controlsContainer}>
                         <TouchableOpacity onPress={playPrevious} style={styles.iconButton}>

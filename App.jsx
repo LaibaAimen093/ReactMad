@@ -3,11 +3,14 @@ import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 // import { Ionicons  } from "react-native-vector-icons/Icon";
-import {Image} from 'react-native';
+import {Image,StatusBar,View,StyleSheet } from 'react-native';
+import Toast from 'react-native-toast-message';
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
 
+// import SplashScreen from './SplashScreen';
+import SplashScreen from "./SplashScreen ";
 import SignUp from "./SignUp";
 import Login from "./Login";
 import Screen1 from "./Screen1";
@@ -74,23 +77,37 @@ function HomeTabs() {
 }
 
 export default function App() {
-  return (  
-    <UserProvider>
-      <NavigationContainer>
-        <Stack.Navigator screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="SignUp" component={SignUp} />
-          <Stack.Screen name="Login" component={Login} />
-          <Stack.Screen name="ForgotPasswordScreen" component={ForgotPasswordScreen} />
-          <Stack.Screen name="HomeTabs" component={HomeTabs} />
-          <Stack.Screen name="Screen1" component={Screen1} />
-          <Stack.Screen name="Player" component={Player} />
-          <Stack.Screen name="BookInfo" component={BookInfo} />
-          <Stack.Screen name="AuthorDetails" component={AuthorDetails} />
-          <Stack.Screen name="PlaylistDetailsScreen" component={PlaylistDetailsScreen} />
-          {/* <Stack.Screen name="Books" component={Books} />
-          <Stack.Screen name="AudioBooks" component={AudioBooks} /> */}
-        </Stack.Navigator>
-      </NavigationContainer>
-    </UserProvider>
+  return ( 
+    <View style={styles.container}>
+      <StatusBar backgroundColor="#673987" barStyle="light-content" />
+      <UserProvider>
+        <NavigationContainer>
+          <Stack.Navigator screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="SplashScreen" component={SplashScreen} />
+            <Stack.Screen name="SignUp" component={SignUp} />
+            <Stack.Screen name="Login" component={Login} />
+            <Stack.Screen name="ForgotPasswordScreen" component={ForgotPasswordScreen} />
+            <Stack.Screen name="HomeTabs" component={HomeTabs} />
+            <Stack.Screen name="Screen1" component={Screen1} />
+            <Stack.Screen name="Player" component={Player} />
+            <Stack.Screen name="BookInfo" component={BookInfo} />
+            <Stack.Screen name="AuthorDetails" component={AuthorDetails} />
+            <Stack.Screen name="PlaylistDetailsScreen" component={PlaylistDetailsScreen} />
+            {/* <Stack.Screen name="Books" component={Books} />
+            <Stack.Screen name="AudioBooks" component={AudioBooks} /> */}
+          </Stack.Navigator>
+        </NavigationContainer>
+        <Toast ref={(ref) => Toast.setRef(ref)} />
+      </UserProvider>
+    </View> 
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    // marginTop:0,
+    // paddingTop:0,
+    backgroundColor: '#fff',
+  },
+});

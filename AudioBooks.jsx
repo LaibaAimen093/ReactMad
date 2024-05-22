@@ -2,7 +2,7 @@ import React, { useState, useEffect,useContext } from 'react';
 import { View, Text, FlatList, StyleSheet, TouchableOpacity, Image, ActivityIndicator, Modal,Alert  } from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { Collapse, CollapseHeader, CollapseBody } from "accordion-collapse-react-native";
-
+import Toast from 'react-native-toast-message';
 
 import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc, getDocs, addDoc, query, where, getDoc } from "firebase/firestore";
 import UserContext from './UserContext';
@@ -37,6 +37,11 @@ useEffect(() => {
     setLoading(false);
   }
 }, [audiobooks]);
+
+const dummyFunction = () => {
+  console.log("This is a dummy function");
+};
+
 
 // useEffect(() => {
 //   setUserId(route.params.userId);
@@ -82,6 +87,30 @@ const fetchPlaylistId = async (playlistName, userId) => {
   }
 };
 
+// useEffect(() => {
+//   const fetchUserRatings = async () => {
+//     try {
+//       const db = getFirestore();
+//       const audiobooksSnapshot = await getDocs(collection(db, 'audiobooks'));
+//       const allAudiobooks = audiobooksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+//       // Update the audiobooks with the userHasRated property
+//       const updatedAudiobooks = allAudiobooks.map(book => ({
+//         ...book,
+//         userHasRated: !!(book.rating && book.rating.userRatings && book.rating.userRatings[userId])
+//       }));
+
+//       setAudiobooks(updatedAudiobooks);
+//     } catch (error) {
+//       console.error('Error fetching user ratings:', error);
+//       alert('Error fetching user ratings. Please try again later.');
+//     }
+//   };
+
+//   fetchUserRatings();
+// },);
+
+
 
 
 useEffect(() => {
@@ -122,7 +151,7 @@ useEffect(() => {
             userHasRated: !!(book.rating && book.rating.userRatings && book.rating.userRatings[userId])
           }));
 
-          // Set the state only once after all updates
+      
           setAudiobooks(updatedAudiobooks);
           setLoading(false); // Set loading to false once data fetching is complete
         }
@@ -130,6 +159,13 @@ useEffect(() => {
         // If playlist doesn't exist, fetch all audiobooks directly
         const audiobooksSnapshot = await getDocs(collection(db, 'audiobooks'));
         const fetchedAudiobooks = audiobooksSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+
+        // Update the audiobooks with the userHasRated property
+      const updatedAudiobooks = fetchedAudiobooks.map(book => ({
+        ...book,
+        userHasRated: !!(book.rating && book.rating.userRatings && book.rating.userRatings[userId])
+      }));
+
         setAudiobooks(fetchedAudiobooks);
         setLoading(false);
       }
@@ -238,6 +274,14 @@ const handleRatingSelection = (bookId, rating) => {
   //   fetchPlaylistDetails();
   // }, [playlistId, userId]);
 
+  const showToast = (message) => {
+    Toast.show({
+        type: 'success',
+        text1: message,
+        position: 'bottom',
+    });
+};
+
   
  const addToPlaylist = async (bookId, playlistName, userId, bookDetails) => {
   try {
@@ -280,10 +324,12 @@ const handleRatingSelection = (bookId, rating) => {
           });
 
           console.log('Book added to playlist successfully with ID:', bookDocRef.id);
+          showToast('Book added to playlist');
       } else {
           // Book already exists in the playlist
           console.log('Book already exists in the playlist.');
-          alert('Book already exists in the playlist.');
+          // alert('Book already exists in the playlist.');
+          showToast('Book already exists in the playlist.');
       }
 
       const playlistId = await fetchPlaylistId(playlistName, userId);
@@ -429,7 +475,7 @@ const renderItem = ({ item }) => (
             <Text style={styles.ratingText}>
               Rating: {item.rating.value.toFixed(1)} ({item.rating.count} ratings)
             </Text>
-            <StarRatingDisplay starSize={25} color='#673987' starStyle={{marginRight:0,}} rating={item.rating.value.toFixed(1)} />
+            <StarRatingDisplay starSize={25} color='#673987' starStyle={{marginRight:0,}} rating={item.rating.value.toFixed(1)} onChange={dummyFunction} />
           </>
         ) : (
           <Text style={styles.ratingText}>No ratings yet</Text>
@@ -586,15 +632,16 @@ return (
           keyExtractor={item => item.id}
         />
       )} */}
-      <View>
+      {/* <View>
         <Text style={{fontSize:30,marginLeft:10,fontWeight:'bold',marginTop:20,}}>
           AudioBooks:
         </Text>
-      </View>
+      </View> */}
        <FlatList
           data={audiobooks}
           renderItem={renderItem}
           keyExtractor={item => item.id}
+          showsVerticalScrollIndicator={false}
         />
 
         
@@ -630,7 +677,7 @@ return (
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    marginTop: 50,
+    marginTop: 30,
     paddingHorizontal: 20,
   },
   itemContainer: {
@@ -645,8 +692,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   image: {
-    width: 90,
-    height: 140,
+    width: 110,
+    height: 160,
     borderRadius: 10,
     marginRight: 10,
   },
@@ -666,10 +713,10 @@ const styles = StyleSheet.create({
   rateButton: {
     marginTop: 10,
     backgroundColor: '#673987',
-    paddingVertical: 10,
-    paddingHorizontal: 30,
+    paddingVertical: 3,
+    paddingHorizontal: 35,
     borderRadius: 5,
-    width:160,
+    width:180,
   },
   rateButtonText: {
     color: 'white',
@@ -783,19 +830,20 @@ const styles = StyleSheet.create({
   collapseHeader: {
     padding: 10,
     backgroundColor: '#673987',
+    paddingVertical:5,
     borderRadius: 5,
-    marginTop: 10,
-    marginLeft:50,
+    marginTop: 5,
+    marginLeft:40,
   },
   collapseHeaderText: {
-    fontSize: 16,
+    fontSize: 15,
     color:'white',
     fontWeight: 'bold',
   },
   playlistOption: {
-    width:120,
+    width:110,
     padding: 10,
-    marginLeft:50,
+    marginLeft:40,
     backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#ccc',

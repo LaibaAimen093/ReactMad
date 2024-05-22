@@ -43,6 +43,11 @@ export default function AuthorDetails({ route, navigation }) {
     fetchBooksAndAudiobooks();
   }, [authorId]);
 
+  const dummyFunction = () => {
+    console.log("This is a dummy function");
+  };
+
+
   const renderItem = ({ item }) => (
     <TouchableOpacity style={styles.itemContainer}
     onPress={() => navigation.navigate('BookInfo', { books, currentIndex: books.findIndex(book => book.title === item.title) })}>
@@ -60,7 +65,7 @@ export default function AuthorDetails({ route, navigation }) {
               <Text style={styles.ratingText}>
                 Rating: {item.rating.value.toFixed(1)} ({item.rating.count} ratings)
               </Text>
-              <StarRatingDisplay rating={item.rating.value.toFixed(1)} />
+              <StarRatingDisplay starSize={25} color='#673987' starStyle={{marginRight:0,}} rating={item.rating.value.toFixed(1)} onChange={dummyFunction} />
             </View>
           ) : (
             <Text style={styles.ratingText}>No ratings yet</Text>
@@ -116,7 +121,7 @@ export default function AuthorDetails({ route, navigation }) {
             data={[...books, ...audiobooks]}
             renderItem={renderItem}
             keyExtractor={item => item.id}
-            numColumns={2}
+            // numColumns={2}
             contentContainerStyle={styles.listContent}
           />
         </View>
@@ -127,10 +132,10 @@ export default function AuthorDetails({ route, navigation }) {
 
 const styles = StyleSheet.create({
   container: {
-    marginTop: 10,
+    // marginTop: 10,
     flex: 1,
     backgroundColor: "white",
-    paddingTop: 20,
+    // paddingTop: 20,
   },
   loaderContainer: {
     flex: 1,
