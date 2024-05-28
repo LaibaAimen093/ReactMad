@@ -5,7 +5,6 @@ import Slider from '@react-native-community/slider';
 import UserContext from './UserContext';
 import firebase from './firebase';
 import { getFirestore, collection, doc, setDoc, getDoc } from 'firebase/firestore';
-// import { useAudiobook } from './AudiobookContext';
 
 export default function Player({ route, navigation }) {
     const { audiobooks, currentIndex } = route.params;
@@ -14,10 +13,8 @@ export default function Player({ route, navigation }) {
     const [position, setPosition] = useState(0);
     const [duration, setDuration] = useState(0);
     const [loading, setLoading] = useState(true);
-    // const [isLoading, setLoading] = useState(false);
     const { userId } = useContext(UserContext);
     const db = getFirestore();
-    // const { setProgressPercentage } = useAudiobook();
 
     useEffect(() => {
         const loadProgress = async (userId, audiobookTitle, audiobookAuthor) => {
@@ -28,17 +25,6 @@ export default function Player({ route, navigation }) {
                     const progress = docSnap.data();
                     return progress ? progress.position : 0;
                 }
-
-                // const audiobookDocRef = doc(collection(db, 'audiobooks'), `${audiobookTitle}_${audiobookAuthor}`);
-                // const audiobookDocSnap = await getDoc(audiobookDocRef);
-                // let fetchedDuration = 0;
-                // if (audiobookDocSnap.exists()) {
-                //     const audiobookData = audiobookDocSnap.data();
-                //     fetchedDuration = audiobookData ? audiobookData.duration : 0;
-                // }
-
-                // console.log("fetchedDuration",fetchedDuration);
-                // setDuration(fetchedDuration);
                 return 0;
             } catch (error) {
                 console.error('Error loading progress:', error);
@@ -78,20 +64,6 @@ export default function Player({ route, navigation }) {
         return unsubscribe;
     }, [navigation, sound, position]);
 
-    // const displayProgressPercentage = (position, duration) => {
-    //     if (duration === 0) {
-    //         return '0%'; // Handle the case where duration is zero to avoid division by zero
-    //     }
-    //     return `${((position / duration) * 100).toFixed(2)}%`; // Display percentage with two decimal places
-    // };
-    
-    // // Use this function to calculate progress percentage
-    // useEffect(()=>{
-    //     const percentage = displayProgressPercentage(position, duration);
-    //     setProgressPercentage(percentage)
-    // },[]);
-    
-
     const playSound = async (uri, lastPosition) => {
         setLoading(true);
         try {
@@ -100,6 +72,11 @@ export default function Player({ route, navigation }) {
                 if (status.isLoaded && status.isPlaying) {
                     await sound.pauseAsync();
                     setIsPlaying(false);
+                    return;
+                } else if (status.isLoaded) {
+                    await sound.playAsync();
+                    setIsPlaying(true);
+                    setLoading(false);
                     return;
                 }
             }
@@ -162,7 +139,7 @@ export default function Player({ route, navigation }) {
         if (status.isLoaded) {
             console.log('Playback status updated:', status);
             setPosition(status.positionMillis / 1000);
-            // setDuration(status.durationMillis / 1000);
+            setDuration(status.durationMillis / 1000);
 
             if (status.didJustFinish) {
                 playNext();
@@ -186,13 +163,14 @@ export default function Player({ route, navigation }) {
 
     const playNext = () => {
         const nextIndex = (currentIndex + 1) % audiobooks.length;
-        navigation.setParams({ currentIndex: nextIndex });
+        navigation.replace('Player', { audiobooks, currentIndex: nextIndex });
     };
-
+    
     const playPrevious = () => {
         const prevIndex = (currentIndex - 1 + audiobooks.length) % audiobooks.length;
-        navigation.setParams({ currentIndex: prevIndex });
+        navigation.replace('Player', { audiobooks, currentIndex: prevIndex });
     };
+    
 
     const formatTime = (timeInSeconds) => {
         console.log("timeInSeconds",timeInSeconds);
@@ -209,7 +187,6 @@ export default function Player({ route, navigation }) {
     
         return `${formattedHours}:${formattedMinutes}:${formattedSeconds}`;
     };
-    
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -217,7 +194,7 @@ export default function Player({ route, navigation }) {
                 sound.getStatusAsync().then(status => {
                     if (status.isLoaded) {
                         setPosition(status.positionMillis / 1000);
-                        // setDuration(status.durationMillis / 1000);
+                        setDuration(status.durationMillis / 1000);
                     }
                 });
             }
@@ -228,55 +205,55 @@ export default function Player({ route, navigation }) {
 
     const CustomLoader = () => (
         <View style={styles.loaderContainer}>
-          <Image source={require('./assets/loader2.gif')} style={styles.loaderImage} />
+            <Image source={require('./assets/loader2.gif')} style={styles.loaderImage} />
         </View>
-      );
-    
-      if (loading) {
+    );
+
+    if (loading) {
         return (
-          <CustomLoader />
+            <CustomLoader />
         );
-      }
-    
+    }
 
     return (
         <View style={styles.container}>
-                <>
-                    <Image source={{ uri: audiobooks[currentIndex].coverUrl }} style={styles.coverImage} />
-                    <Text style={styles.title}>{audiobooks[currentIndex].title}</Text>
-                    <Slider
-                        style={{ width: '80%' }}
-                        minimumValue={0}
-                        maximumValue={duration}
-                        value={position}
-                        onValueChange={onSliderValueChange}
-                        onSlidingComplete={onSlidingComplete}
-                        minimumTrackTintColor="#007bff"
-                        maximumTrackTintColor="#000000"
-                    />
-                    <View style={styles.timeContainer}>
-                        <Text>{formatTime(position)}</Text>
-                        <Text>{audiobooks[currentIndex].duration !== 0 ? formatTime(audiobooks[currentIndex].duration - position) : '00:00:00'}</Text>
-                    </View>
-                    <View style={styles.controlsContainer}>
-                        <TouchableOpacity onPress={playPrevious} style={styles.iconButton}>
-                            <Image source={require('./assets/previous.png')} style={{
-                                width: 30,
-                                height: 30,
-                                tintColor: '#673987',
-                            }} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={isPlaying ? pauseSound : () => playSound(audiobooks[currentIndex].audioUrl, position)} style={styles.playButton}>
-                            <Image source={isPlaying ? require('./assets/pause.png') : require('./assets/play.png')} style={styles.iconImage} />
-                        </TouchableOpacity>
-                        <TouchableOpacity onPress={playNext} style={styles.iconButton}>
-                            <Image source={require('./assets/next.png')} style={{width: 30,
-                                height: 30,
-                                tintColor: '#673987',}} />
-                        </TouchableOpacity>
-                    </View>
-                </>
-            
+            <>
+                <Image source={{ uri: audiobooks[currentIndex].coverUrl }} style={styles.coverImage} />
+                <Text style={styles.title}>{audiobooks[currentIndex].title}</Text>
+                <Slider
+                    style={{ width: '80%' }}
+                    minimumValue={0}
+                    maximumValue={duration}
+                    value={position}
+                    onValueChange={onSliderValueChange}
+                    onSlidingComplete={onSlidingComplete}
+                    minimumTrackTintColor="#007bff"
+                    maximumTrackTintColor="#000000"
+                />
+                <View style={styles.timeContainer}>
+                    <Text>{formatTime(position)}</Text>
+                    <Text>{audiobooks[currentIndex].duration !== 0 ? formatTime(audiobooks[currentIndex].duration - position) : '00:00:00'}</Text>
+                </View>
+                <View style={styles.controlsContainer}>
+                    <TouchableOpacity onPress={playPrevious} style={styles.iconButton}>
+                        <Image source={require('./assets/previous.png')} style={{
+                            width: 30,
+                            height: 30,
+                            tintColor: '#673987',
+                        }} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={isPlaying ? pauseSound : () => playSound(audiobooks[currentIndex].audioUrl, position)} style={styles.playButton}>
+                        <Image source={isPlaying ? require('./assets/pause.png') : require('./assets/play.png')} style={styles.iconImage} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={playNext} style={styles.iconButton}>
+                        <Image source={require('./assets/next.png')} style={{
+                            width: 30,
+                            height: 30,
+                            tintColor: '#673987',
+                        }} />
+                    </TouchableOpacity>
+                </View>
+            </>
         </View>
     );
 }
@@ -303,7 +280,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     playButton: {
-        // backgroundColor: '#673987',
         padding: 15,
         borderRadius: 50,
         marginHorizontal: 10,
@@ -326,10 +302,10 @@ const styles = StyleSheet.create({
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-      },
-      loaderImage: {
+    },
+    loaderImage: {
         width: 150,
         height: 150,
         tintColor: '#673987',
-      }
+    }
 });
