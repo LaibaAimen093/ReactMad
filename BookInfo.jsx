@@ -2,16 +2,18 @@ import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, ImageBackground } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as OpenAnything from "react-native-openanything";
+import useToggle from './useToggle';
+import CustomButton from './CustomButton';
 
 
 export default function BookInfo({ route, navigation }) {
     const { books, currentIndex } = route.params;
-    const [showFullSummary, setShowFullSummary] = useState(false);
+    const [showFullSummary, toggleSummary] = useToggle(false);
 
     // Function to toggle show more/less
-    const toggleSummary = () => {
-        setShowFullSummary(!showFullSummary);
-    };
+    // const toggleSummary = () => {
+    //     setShowFullSummary(!showFullSummary);
+    // };
 
     return (
         <>
@@ -59,13 +61,13 @@ export default function BookInfo({ route, navigation }) {
                 </View>
             </ScrollView>
             <View style={{ position: "absolute", bottom: 20, width: "100%" }}>
-            <TouchableOpacity style={styles.downloadButton}
-                onPress={() => {
-                    OpenAnything.Pdf(books[currentIndex].pdfUrl);
-                }}
-            >
-                <Text style={styles.buttonText}>Download</Text>
-            </TouchableOpacity>
+                 <CustomButton
+                    onPress={() => {
+                        OpenAnything.Pdf(books[currentIndex].pdfUrl);
+                    }}
+                    title="Download"
+                    style={styles.downloadButton}
+                />
             </View>
         </>
     );
